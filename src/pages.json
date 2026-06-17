@@ -34,6 +34,16 @@
       "path": "pages/me",
       "type": "page",
       "style": {}
+    },
+    {
+      "path": "pages/three",
+      "type": "page",
+      "style": {}
+    },
+    {
+      "path": "pages/webgis",
+      "type": "page",
+      "style": {}
     }
   ],
   "subPackages": []

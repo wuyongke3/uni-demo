@@ -7,7 +7,9 @@ type _LocationUrl =
   "/pages/login" |
   "/pages/admin-user" |
   "/pages/index" |
-  "/pages/me";
+  "/pages/me" |
+  "/pages/three" |
+  "/pages/webgis";
 
 interface NavigateToOptions {
   url: _LocationUrl;
