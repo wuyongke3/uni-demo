@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import { post } from '@/utils/request'
+
+// 角色类型
+type UserRole = 'lecturer' | 'student'
+
+const role = ref<UserRole>('student')
 
 // 表单数据
 const formData = reactive({
-  phone: '',
+  account: '',
   password: '',
 })
 
@@ -12,6 +18,17 @@ const showPassword = ref(false)
 const loading = ref(false)
 const agreed = ref(true)
 const canUseWechat = ref(false)
+
+/** 角色选项 */
+const roleOptions: { value: UserRole, label: string }[] = [
+  { value: 'student', label: '学生' },
+  { value: 'lecturer', label: '讲师' },
+]
+
+/** 根据角色获取登录接口路径 */
+function getLoginUrl(role: UserRole): string {
+  return `/auth/${role}/login`
+}
 
 // 检测是否支持微信登录
 onMounted(() => {
@@ -27,12 +44,8 @@ onMounted(() => {
 
 // 账号密码登录
 async function handleLogin() {
-  if (!formData.phone || !formData.password) {
+  if (!formData.account || !formData.password) {
     uni.showToast({ title: '请填写完整信息', icon: 'none' })
-    return
-  }
-  if (!/^1\d{10}$/.test(formData.phone)) {
-    uni.showToast({ title: '手机号格式不正确', icon: 'none' })
     return
   }
   if (!agreed.value) {
@@ -42,20 +55,23 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    // TODO: 替换为实际的登录接口
-    // const res = await request.post('/api/login', formData)
+    const res: any = await post(getLoginUrl(role.value), {
+      name: formData.account,
+      password: formData.password,
+    })
 
-    // 模拟登录成功
+    // 保存 token
+    if (res.token) {
+      uni.setStorageSync('token', res.token)
+    }
+
+    uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => {
-      uni.showToast({ title: '登录成功', icon: 'success' })
-      // 登录成功后跳转
-      setTimeout(() => {
-        uni.switchTab({ url: '/pages/index/index' })
-      }, 1500)
-    }, 1000)
+      uni.switchTab({ url: '/pages/index/index' })
+    }, 1500)
   }
   catch (error: any) {
-    uni.showToast({ title: error.errMsg || '登录失败', icon: 'none' })
+    // 错误已在拦截器中统一处理
   }
   finally {
     loading.value = false
@@ -123,12 +139,27 @@ async function handleWechatLogin() {
     </view>
 
     <view class="login-form">
+      <!-- 角色选择 -->
+      <view class="form-item role-select">
+        <text class="label">身份</text>
+        <view class="role-options">
+          <view
+            v-for="item in roleOptions"
+            :key="item.value"
+            class="role-option"
+            :class="{ active: role === item.value }"
+            @click="role = item.value"
+          >
+            {{ item.label }}
+          </view>
+        </view>
+      </view>
+
       <view class="form-item">
         <input
-          v-model="formData.phone"
-          type="number"
-          maxlength="11"
-          placeholder="请输入手机号"
+          v-model="formData.account"
+          type="text"
+          placeholder="请输入账号"
           class="form-input"
           placeholder-style="color: #999"
         >
@@ -150,6 +181,11 @@ async function handleWechatLogin() {
       <button class="login-btn" :loading="loading" @click="handleLogin">
         登 录
       </button>
+
+      <!-- 注册入口 -->
+      <view class="regist-link">
+        没有账号？<text class="link" @click="uni.navigateTo({ url: '/pages/regist' })">立即注册</text>
+      </view>
     </view>
 
     <!-- 微信登录 -->
@@ -216,21 +252,62 @@ async function handleWechatLogin() {
 }
 
 .form-item {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   border-bottom: 1rpx solid #eee;
   padding: 24rpx 0;
 
+  &.role-select {
+    border-bottom: none;
+    margin-bottom: -10rpx;
+
+    .label {
+      font-size: 28rpx;
+      color: #666;
+      margin-right: 20rpx;
+      white-space: nowrap;
+    }
+  }
+
   .form-input {
     flex: 1;
     font-size: 30rpx;
     height: 48rpx;
+    color: #333;
+    position: relative;
+    z-index: 10;
+    background: transparent;
   }
 
   .toggle-pwd {
     font-size: 26rpx;
     color: #07c160;
     padding: 0 10rpx;
+  }
+}
+
+.role-options {
+  display: flex;
+  gap: 20rpx;
+  flex: 1;
+}
+
+.role-option {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+  color: #666;
+  border: 2rpx solid #ddd;
+  border-radius: 12rpx;
+  transition: all 0.2s;
+
+  &.active {
+    color: #07c160;
+    border-color: #07c160;
+    background: rgba(7, 193, 96, 0.05);
   }
 }
 
@@ -247,6 +324,17 @@ async function handleWechatLogin() {
 
   &[disabled] {
     opacity: 0.6;
+  }
+}
+
+.regist-link {
+  text-align: center;
+  margin-top: 30rpx;
+  font-size: 28rpx;
+  color: #999;
+
+  .link {
+    color: #07c160;
   }
 }
 

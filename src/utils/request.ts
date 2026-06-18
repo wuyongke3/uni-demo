@@ -1,6 +1,8 @@
 import un from '@uni-helper/uni-network'
 
-const BASE_URL = `${import.meta.env.BASE_PROTOCOL}://${import.meta.env.BASE_HOST}:${import.meta.env.BASE_PORT}${import.meta.env.BASE_URL}`
+const BASE_URL = `${import.meta.env.VITE_BASE_PROTOCOL}://${import.meta.env.VITE_BASE_HOST}:${import.meta.env.VITE_BASE_PORT}${import.meta.env.VITE_BASE_URL}`
+
+// console.log('BASE_URL:', BASE_URL)
 
 const request = un.create({
   baseURL: BASE_URL,
@@ -37,6 +39,11 @@ export interface ApiResponse<T = any> {
 
 request.interceptors.request.use(
   (config) => {
+    // 确保使用完整 URL（H5 模式 baseURL 可能不生效）
+    if (BASE_URL && !config.url?.startsWith('http')) {
+      config.url = `${BASE_URL}${config.url}`
+    }
+
     const token = uni.getStorageSync('token')
     if (token) {
       config.header = {
@@ -96,16 +103,16 @@ export function queryList<T = any>(module: string, params?: PageParams, config?:
  * @example getInfo<lecturers>('lecturers', '1')
  * @example getInfo<lecturers>('lecturers', '1,2,3')  // 批量
  */
-export function getInfo<T = any>(module: string, ids: string | number, config?: Record<string, any>) {
-  return request.get<T>(`/${module}/info/${ids}`, config)
+export function getInfo<T = any>(url: string, ids: string | number, config?: Record<string, any>) {
+  return request.get<T>(`${url}/${ids}`, config)
 }
 
 /**
  * 新增记录 - POST /{module}/add
  * @example addRecord<lecturers>('lecturers', { name: '张三', no: 'T001' })
  */
-export function addRecord<T = any>(module: string, data: Record<string, any>, config?: Record<string, any>) {
-  return request.post<T>(`/${module}/add`, data, config)
+export function addRecord<T = any>(url: string, data: Record<string, any>, config?: Record<string, any>) {
+  return request.post<T>(url, data, config)
 }
 
 /**

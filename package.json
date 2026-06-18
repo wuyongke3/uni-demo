@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "unh dev",
+    "dev": "unh dev --mode development",
     "build": "unh build",
     "about": "unh info",
     "type-check": "vue-tsc --noEmit",

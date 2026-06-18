@@ -36,6 +36,11 @@
       "style": {}
     },
     {
+      "path": "pages/regist",
+      "type": "page",
+      "style": {}
+    },
+    {
       "path": "pages/three",
       "type": "page",
       "style": {}

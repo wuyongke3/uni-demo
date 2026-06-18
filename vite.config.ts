@@ -18,6 +18,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+
   plugins: [
     // https://uni-helper.js.org/vite-plugin-uni-components
     Components({

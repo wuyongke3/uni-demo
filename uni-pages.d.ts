@@ -8,6 +8,7 @@ type _LocationUrl =
   "/pages/admin-user" |
   "/pages/index" |
   "/pages/me" |
+  "/pages/regist" |
   "/pages/three" |
   "/pages/webgis";
 
