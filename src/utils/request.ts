@@ -1,8 +1,7 @@
 import un from '@uni-helper/uni-network'
+import { ErrorCode, getErrorMsg } from './errorcode'
 
 const BASE_URL = `${import.meta.env.VITE_BASE_PROTOCOL}://${import.meta.env.VITE_BASE_HOST}:${import.meta.env.VITE_BASE_PORT}${import.meta.env.VITE_BASE_URL}`
-
-// console.log('BASE_URL:', BASE_URL)
 
 const request = un.create({
   baseURL: BASE_URL,
@@ -39,7 +38,7 @@ export interface ApiResponse<T = any> {
 
 request.interceptors.request.use(
   (config) => {
-    // 确保使用完整 URL（H5 模式 baseURL 可能不生效）
+    // H5 模式下 baseURL 可能不生效，手动拼接完整 URL
     if (BASE_URL && !config.url?.startsWith('http')) {
       config.url = `${BASE_URL}${config.url}`
     }
@@ -67,19 +66,20 @@ request.interceptors.response.use(
     }
 
     // 业务成功（code === 0）
-    if (data.code === 0) {
+    if (data.code === ErrorCode.Success) {
       return data.data
     }
 
-    // token 过期或未授权
-    if (data.code === 401 || statusCode === 401) {
+    // token 过期或未授权（2xxxx 段）
+    if (data.code >= 20000 && data.code < 30000) {
       uni.removeStorageSync('token')
       uni.reLaunch({ url: '/pages/login' })
-      return Promise.reject(new Error('登录已过期'))
+      return Promise.reject(new Error(getErrorMsg(data.code)))
     }
 
-    // 其他业务错误（使用 message 字段）
-    uni.showToast({ title: data.message || '请求失败', icon: 'none' })
+    // 其他业务错误：优先使用后端返回的 message，兜底使用错误码默认文案
+    const msg = data.message || getErrorMsg(data.code)
+    uni.showToast({ title: msg, icon: 'none' })
     return Promise.reject(data)
   },
   (error) => {
@@ -90,45 +90,27 @@ request.interceptors.response.use(
 
 // ==================== 5 个标准接口 ====================
 
-/**
- * 分页列表查询 - POST /{module}/all
- * @example queryList<lecturers>('lecturers', { limit: 10, page: 1 })
- */
+/** 分页列表查询 - POST /{module}/all */
 export function queryList<T = any>(module: string, params?: PageParams, config?: Record<string, any>) {
   return request.post<PageResult<T>>(`/${module}/all`, params, config)
 }
 
-/**
- * 查询详情 - GET /{module}/info/:ids
- * @example getInfo<lecturers>('lecturers', '1')
- * @example getInfo<lecturers>('lecturers', '1,2,3')  // 批量
- */
+/** 查询详情 - GET /{module}/info/:ids */
 export function getInfo<T = any>(url: string, ids: string | number, config?: Record<string, any>) {
   return request.get<T>(`${url}/${ids}`, config)
 }
 
-/**
- * 新增记录 - POST /{module}/add
- * @example addRecord<lecturers>('lecturers', { name: '张三', no: 'T001' })
- */
+/** 新增记录 - POST /{module}/add */
 export function addRecord<T = any>(url: string, data: Record<string, any>, config?: Record<string, any>) {
   return request.post<T>(url, data, config)
 }
 
-/**
- * 编辑记录 - POST /{module}/modify/:id
- * 只传需要更新的字段即可
- * @example modifyRecord<lecturers>('lecturers', 1, { name: '张三丰' })
- */
+/** 编辑记录 - POST /{module}/modify/:id */
 export function modifyRecord<T = any>(module: string, id: string | number, data: Record<string, any>, config?: Record<string, any>) {
   return request.post<T>(`/${module}/modify/${id}`, data, config)
 }
 
-/**
- * 批量删除 - DELETE /{module}/delete/:ids
- * @example deleteRecords('lecturers', '1')
- * @example deleteRecords('lecturers', '1,2,3')  // 批量
- */
+/** 批量删除 - DELETE /{module}/delete/:ids */
 export function deleteRecords(module: string, ids: string | number, config?: Record<string, any>) {
   return request.delete(`/${module}/delete/${ids}`, config)
 }

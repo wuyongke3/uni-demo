@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { post } from '@/utils/request'
+
+const BASE_URL = 'http://127.0.0.1:8000/api/v1'
 
 // 角色类型
 type UserRole = 'lecturer' | 'student'
@@ -25,11 +26,6 @@ const roleOptions: { value: UserRole, label: string }[] = [
   { value: 'lecturer', label: '讲师' },
 ]
 
-/** 根据角色获取登录接口路径 */
-function getLoginUrl(role: UserRole): string {
-  return `/auth/${role}/login`
-}
-
 // 检测是否支持微信登录
 onMounted(() => {
   // #ifdef MP-WEIXIN
@@ -37,13 +33,12 @@ onMounted(() => {
   // #endif
 
   // #ifdef APP-PLUS
-  // 检查是否安装微信
   canUseWechat.value = plus.runtime.isApplicationExist({ pname: 'com.tencent.mm' })
   // #endif
 })
 
 // 账号密码登录
-async function handleLogin() {
+function handleLogin() {
   if (!formData.account || !formData.password) {
     uni.showToast({ title: '请填写完整信息', icon: 'none' })
     return
@@ -54,28 +49,38 @@ async function handleLogin() {
   }
 
   loading.value = true
-  try {
-    const res: any = await post(getLoginUrl(role.value), {
+  const url = `${BASE_URL}/auth/${role.value}/login`
+
+  uni.request({
+    url,
+    method: 'POST',
+    header: { 'Content-Type': 'application/json' },
+    data: {
       name: formData.account,
       password: formData.password,
-    })
-
-    // 保存 token
-    if (res.token) {
-      uni.setStorageSync('token', res.token)
-    }
-
-    uni.showToast({ title: '登录成功', icon: 'success' })
-    setTimeout(() => {
-      uni.switchTab({ url: '/pages/index/index' })
-    }, 1500)
-  }
-  catch (error: any) {
-    // 错误已在拦截器中统一处理
-  }
-  finally {
-    loading.value = false
-  }
+    },
+    success(res) {
+      if (res.statusCode === 200 && res.data?.code === 0) {
+        const data = res.data.data || {}
+        if (data.token) {
+          uni.setStorageSync('token', data.token)
+        }
+        uni.showToast({ title: '登录成功', icon: 'success' })
+        setTimeout(() => {
+          uni.redirectTo({ url: '/pages/me' })
+        }, 1500)
+      }
+      else {
+        uni.showToast({ title: res.data?.message || '登录失败', icon: 'none' })
+      }
+    },
+    fail() {
+      uni.showToast({ title: '网络异常', icon: 'none' })
+    },
+    complete() {
+      loading.value = false
+    },
+  })
 }
 
 // 微信登录

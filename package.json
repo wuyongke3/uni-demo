@@ -29,7 +29,6 @@
     "@dcloudio/uni-mp-weixin": "3.0.0-5000720260410001",
     "@dcloudio/uni-mp-xhs": "3.0.0-5000720260410001",
     "@dcloudio/uni-quickapp-webview": "3.0.0-5000720260410001",
-    "@uni-helper/uni-network": "^0.23.1",
     "@uni-helper/uni-promises": "^0.2.1",
     "@uni-helper/uni-use": "^0.19.17",
     "@vueuse/core": "9.13.0",
